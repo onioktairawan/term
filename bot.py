@@ -48,7 +48,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         teks += f"{p['id']}. {p['nama']} - Rp {p['harga']:,} ✨\n"
     keyboard = [
         [InlineKeyboardButton("🛒 Beli Disini", callback_data="beli")],
-        [InlineKeyboardButton("📞 CS", url="t.meserpagengs"),
+        [InlineKeyboardButton("📞 CS", url="t.me/serpagengs"),
          InlineKeyboardButton("📣 Testi", url="t.me/srpatesti")]
     ]
     await update.message.reply_text(teks, reply_markup=InlineKeyboardMarkup(keyboard))
@@ -138,7 +138,7 @@ async def handle_owner_response(update: Update, context: ContextTypes.DEFAULT_TY
         await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 No HP dari @{update.message.from_user.username or uid} telah dikonfirmasi.")
         return INPUT_NOHP
     else:
-        await context.bot.send_message(chat_id=uid, text="❌ Bukti ditolak. Kirim ulang.")
+        await context.bot.send_message(chat_id=uid, text="❌ Kirim yg Bener lah Tolol. Kirim ulang.")
         return KIRIM_BUKTI
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -147,7 +147,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if "nohp" not in user_data_store[uid]:
         user_data_store[uid]["nohp"] = text
-        await update.message.reply_text("✅ Nomor HP diterima, silakan kirim OTP yang telah Anda terima kirim pakai spasi ya.")
+        await update.message.reply_text("✅ Nomor HP diterima, Silakan kirim OTP yang telah Anda terima kirim pakai spasi ya.")
         await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 No HP dari @{update.message.from_user.username or uid}: {text}")
         return INPUT_OTP
     elif "otp" not in user_data_store[uid]:
