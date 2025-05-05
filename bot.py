@@ -48,8 +48,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         teks += f"{p['id']}. {p['nama']} - Rp {p['harga']:,} ✨\n"
     keyboard = [
         [InlineKeyboardButton("🛒 Beli Disini", callback_data="beli")],
-        [InlineKeyboardButton("📞 CS", callback_data="cs"),
-         InlineKeyboardButton("📣 Testi", callback_data="testi")]
+        [InlineKeyboardButton("📞 CS", url="t.me/serpagengs"),
+         InlineKeyboardButton("📣 Testi", url="t.me/srpatesti")]
     ]
     await update.message.reply_text(teks, reply_markup=InlineKeyboardMarkup(keyboard))
     return PILIH_BULAN
