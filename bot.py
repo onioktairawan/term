@@ -54,9 +54,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✅ 𝙎𝙪𝙙𝙖𝙝 𝙏𝙚𝙧𝙗𝙪𝙠𝙩𝙞 𝙏𝙧𝙪𝙨𝙩𝙚𝙙\n\n"
         "📩 𝑶𝒓𝒅𝒆𝒓 𝒔𝒆𝒌𝒂𝒓𝒂𝒏𝒈, 𝒋𝒂𝒏𝒈𝒂𝒏 𝒕𝒖𝒏𝒈𝒈𝒖 𝒃𝒆𝒔𝒐𝒌!\n"
     )
-    await update.message.reply_text(teks_welcome)
-
-    teks = "📦 Daftar Produk:\n\n"
+    teks += "📦 Daftar Produk:\n\n"
     for p in produk_list:
         teks += f"{p['id']}. {p['nama']} - Rp {p['harga']:,} ✨\n"
     keyboard = [
