@@ -22,10 +22,10 @@ logging.basicConfig(
 
 # Produk
 produk_list = [
-    {"id": "1", "nama": "✨ Premium 1 Bulan", "harga": 54000},
-    {"id": "2", "nama": "🌟 Premium 3 Bulan", "harga": 200000},
-    {"id": "3", "nama": "💎 Premium 6 Bulan", "harga": 400000},
-    {"id": "4", "nama": "🏆 Premium 12 Bulan", "harga": 5000000}
+    {"id": "1", "nama": "✨ Premium 1 Bulan", "harga": 53000},
+    {"id": "2", "nama": "🌟 Premium 3 Bulan", "harga": 210000},
+    {"id": "3", "nama": "💎 Premium 6 Bulan", "harga": 289000},
+    {"id": "4", "nama": "🏆 Premium 12 Bulan", "harga": 389000}
 ]
 
 # Metode pembayaran
