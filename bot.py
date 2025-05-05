@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -63,7 +64,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🛒 Beli Disini", callback_data="beli")],
         [InlineKeyboardButton("📞 CS", url="t.me/serpagengs"),
-         InlineKeyboardButton("📣 Testi", url="t.me/srpatesti")]
+         InlineKeyboardButton("📣 Testi", url="t.me/srpatesti")],
+        [InlineKeyboardButton("🔄 Git Pull & Restart", callback_data="git_pull_restart")]
     ]
     await update.message.reply_text(teks, reply_markup=InlineKeyboardMarkup(keyboard))
     return PILIH_BULAN
@@ -89,6 +91,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "start":
         return await start(update, context)
+
+    elif data == "git_pull_restart":
+        # Hanya Owner yang bisa menjalankan Git Pull & Restart
+        user_id = query.from_user.id
+        if user_id != OWNER_ID:
+            await query.edit_message_text("❌ Anda tidak memiliki izin untuk menjalankan perintah ini.")
+            return PILIH_BULAN
+
+        # Fungsi git pull & restart
+        result = git_pull_and_restart()
+        await query.edit_message_text(result)
 
     elif data.startswith("beli_"):
         produk_id = data.split("_")[1]
@@ -141,38 +154,19 @@ async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Hanya foto yang diterima.")
         return KIRIM_BUKTI
 
-async def handle_owner_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    action, uid = query.data.split("_")[1:]
-    uid = int(uid)
-
-    if action == "konfirmasi":
-        await context.bot.send_message(chat_id=uid, text="✅ Terima Kasih Pembayaran dikonfirmasi.\nSilakan kirim nomor HP nya kak.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 No HP dari @{update.message.from_user.username or uid} telah dikonfirmasi.")
-        return INPUT_NOHP
-    else:
-        await context.bot.send_message(chat_id=uid, text="❌ Bukti ditolak. Kirim ulang.")
-        return KIRIM_BUKTI
-
-async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.message.from_user.id
-    text = update.message.text
-
-    if "nohp" not in user_data_store[uid]:
-        user_data_store[uid]["nohp"] = text
-        await update.message.reply_text("✅ Nomor HP diterima, silakan kirim OTP yang telah Anda terima kirim pakai spasi ya.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 No HP dari @{update.message.from_user.username or uid}: {text}")
-        return INPUT_OTP
-    elif "otp" not in user_data_store[uid]:
-        user_data_store[uid]["otp"] = text
-        await update.message.reply_text("✅ OTP diterima, silakan kirim verifikasi 2 langkah jika tidak ada ketik skip.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"🔐 OTP dari @{update.message.from_user.username or uid}: {text}")
-        return INPUT_VERIFIKASI
-    else:
-        user_data_store[uid]["verifikasi"] = text
-        await update.message.reply_text("Terimakasih Atas pembeliannya. Tunggu proses aktivasi ya kak.\nJika ada masalah hubungi CS.")
-        return ConversationHandler.END
+def git_pull_and_restart():
+    try:
+        # Menjalankan git pull untuk menarik pembaruan terbaru
+        pull_result = subprocess.run(["git", "pull"], capture_output=True, text=True)
+        # Jika berhasil, restart bot
+        if pull_result.returncode == 0:
+            # Menggunakan subprocess untuk me-restart bot
+            restart_result = subprocess.run(["python3", "bot.py"], capture_output=True, text=True)
+            return f"✅ Git pull berhasil.\nBot di-restart: {restart_result.stdout}"
+        else:
+            return f"❌ Gagal melakukan git pull: {pull_result.stderr}"
+    except Exception as e:
+        return f"❌ Terjadi kesalahan saat mencoba melakukan git pull atau restart: {str(e)}"
 
 def main():
     application = ApplicationBuilder().token(TOKEN).build()
@@ -181,8 +175,6 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button_handler))
     application.add_handler(MessageHandler(filters.PHOTO, handle_media))
-    application.add_handler(CallbackQueryHandler(handle_owner_response, pattern=r"owner_.+"))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
     # Conversation handler
     conv_handler = ConversationHandler(
@@ -191,10 +183,10 @@ def main():
             PILIH_BULAN: [CallbackQueryHandler(button_handler)],
             KONFIRMASI: [CallbackQueryHandler(button_handler)],
             METODE_BAYAR: [CallbackQueryHandler(button_handler)],
-            KIRIM_BUKTI: [MessageHandler(filters.PHOTO, handle_media)],
-            INPUT_NOHP: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
-            INPUT_OTP: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
-            INPUT_VERIFIKASI: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)]
+            KIRIM_BUKTI: [CallbackQueryHandler(button_handler)],
+            INPUT_NOHP: [CallbackQueryHandler(button_handler)],
+            INPUT_OTP: [CallbackQueryHandler(button_handler)],
+            INPUT_VERIFIKASI: [CallbackQueryHandler(button_handler)],
         },
         fallbacks=[CommandHandler("start", start)],
     )
