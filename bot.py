@@ -1,125 +1,156 @@
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ConversationHandler, CallbackContext
-from telegram.ext import MessageHandler, filters
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, ConversationHandler, CallbackContext
+from dotenv import load_dotenv
+import os
 
-# Set up logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+# Memuat variabel dari .env
+load_dotenv()
+
+# Ambil token dan variabel lainnya
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+OWNER_ID = os.getenv('OWNER_ID')
+CHANNEL_TESTI = os.getenv('CHANNEL_TESTI')
+NAMA_PENERIMA = os.getenv('NAMA_PENERIMA')
+NOREK_BCA = os.getenv('NOREK_BCA')
+NOMOR_DANA = os.getenv('NOMOR_DANA')
+NOMOR_GOPAY = os.getenv('NOMOR_GOPAY')
+LINK_QRIS = os.getenv('LINK_QRIS')
+
+# Logging untuk debugging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define states for conversation
-START, PILIH_BULAN, KONFIRMASI, PEMBAYARAN, KIRIM_BUKTI, VERIFIKASI = range(6)
+# Step ConversationHandler
+PILIH_METODE, KONFIRMASI_BAYAR, NO_HP, OTP, DONE = range(5)
 
-# Command handler for /start
-async def start(update: Update, context: CallbackContext) -> int:
-    # Check if message text is different before editing
-    message = update.callback_query.message
-    text = "Selamat datang! Berikut produk yang kami jual:\n\nProduk A - Rp 100,000\nProduk B - Rp 200,000"
+# Fungsi untuk mulai bot
+def start(update: Update, context: CallbackContext) -> int:
+    user = update.message.from_user
+    logger.info("User %s started the conversation.", user.first_name)
 
-    # Only edit if the text is different
-    if message.text != text:
-        await message.edit_text(
-            text,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Beli Disini", callback_data='beli')],
-                [InlineKeyboardButton("CS", callback_data='cs')],
-                [InlineKeyboardButton("Testimoni", callback_data='testimoni')]
-            ])
-        )
-    return PILIH_BULAN
-
-# Handle product selection
-async def pilih_bulan(update: Update, context: CallbackContext) -> int:
     keyboard = [
-        [InlineKeyboardButton("1 Bulan", callback_data='1_bulan')],
-        [InlineKeyboardButton("3 Bulan", callback_data='3_bulan')],
-        [InlineKeyboardButton("6 Bulan", callback_data='6_bulan')],
-        [InlineKeyboardButton("12 Bulan", callback_data='12_bulan')],
-        [InlineKeyboardButton("Kembali", callback_data='kembali')],
+        [InlineKeyboardButton("Beli Prem Sekarang", callback_data='beli')],
     ]
-    await update.callback_query.message.edit_text(
-        "Silakan pilih durasi berlangganan:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-    return KONFIRMASI
-
-# Handle confirmation of purchase
-async def konfirmasi(update: Update, context: CallbackContext) -> int:
-    bulan = update.callback_query.data
-    if bulan == 'kembali':
-        # Go back to the product list
-        return await start(update, context)
+    reply_markup = InlineKeyboardMarkup(keyboard)
     
-    text = f"Detail produk untuk {bulan} bulan:\nHarga: Rp {int(bulan.split('_')[0])*100000}\n\nApakah Anda yakin?"
-    keyboard = [
-        [InlineKeyboardButton("Konfirmasi", callback_data='konfirmasi')],
-        [InlineKeyboardButton("Kembali", callback_data='kembali')]
-    ]
-    await update.callback_query.message.edit_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(keyboard)
+    # Kirim pesan selamat datang dengan tombol
+    update.message.reply_text(
+        "Selamat datang! Tekan tombol di bawah untuk mulai proses pembelian.",
+        reply_markup=reply_markup
     )
-    return PEMBAYARAN
 
-# Payment methods
-async def pembayaran(update: Update, context: CallbackContext) -> int:
+    return PILIH_METODE
+
+# Fungsi untuk pilihan metode pembayaran
+def pilih_metode(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    query.answer()
+
     keyboard = [
-        [InlineKeyboardButton("QRIS", callback_data='qris')],
+        [InlineKeyboardButton("BCA", callback_data='bca')],
         [InlineKeyboardButton("DANA", callback_data='dana')],
-        [InlineKeyboardButton("Bank BCA", callback_data='bca')],
-        [InlineKeyboardButton("Kembali", callback_data='kembali')]
+        [InlineKeyboardButton("Gopay", callback_data='gopay')],
+        [InlineKeyboardButton("QRIS", callback_data='qris')],
     ]
-    await update.callback_query.message.edit_text(
-        "Silakan pilih metode pembayaran:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    query.edit_message_text(
+        text="Pilih metode pembayaran:",
+        reply_markup=reply_markup
     )
-    return KIRIM_BUKTI
+    
+    return KONFIRMASI_BAYAR
 
-# Kirim bukti transfer
-async def kirim_bukti(update: Update, context: CallbackContext) -> int:
-    # Ask user to send transfer proof
-    await update.callback_query.message.edit_text(
-        "Silakan kirim bukti transfer (screenshot).",
-    )
-    return VERIFIKASI
+# Fungsi untuk konfirmasi pembayaran
+def konfirmasi_bayar(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    query.answer()
+    metode = query.data
 
-# Handle verification of transfer proof
-async def verifikasi(update: Update, context: CallbackContext) -> int:
-    # Handle verification logic, notify owner
-    media = update.message.photo[-1].file_id if update.message.photo else None
-    if media:
-        # Notify owner about the transfer proof
-        await context.bot.send_message(chat_id=context.bot_data['owner_chat_id'], text="Bukti transfer baru diterima.")
-        # Ask for next step (phone number)
-        await update.message.reply_text("Terima kasih! Sekarang kirimkan nomor HP Anda.")
-        return ConversationHandler.END
+    # Mengirimkan informasi rekening sesuai metode
+    if metode == 'bca':
+        info_bayar = f"Silahkan transfer ke:\nNo Rekening: {NOREK_BCA}\nAtas Nama: {NAMA_PENERIMA}"
+    elif metode == 'dana':
+        info_bayar = f"Silahkan transfer ke:\nNo DANA: {NOMOR_DANA}\nAtas Nama: {NAMA_PENERIMA}"
+    elif metode == 'gopay':
+        info_bayar = f"Silahkan transfer ke:\nNo Gopay: {NOMOR_GOPAY}\nAtas Nama: {NAMA_PENERIMA}"
     else:
-        await update.message.reply_text("Mohon kirimkan bukti transfer dalam bentuk screenshot.")
-        return VERIFIKASI
+        info_bayar = f"Silahkan transfer ke:\nLink QRIS: {LINK_QRIS}"
 
-# Handle user command /help (optional)
-async def help_command(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text("Bot ini digunakan untuk membeli produk.")
+    keyboard = [
+        [InlineKeyboardButton("Kirim Bukti Transfer", callback_data='bukti_transfer')],
+        [InlineKeyboardButton("Ulangi", callback_data='ulang')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-# Main function to run the bot
-def main():
-    application = Application.builder().token('YOUR_BOT_API_TOKEN').build()
+    query.edit_message_text(
+        text=info_bayar,
+        reply_markup=reply_markup
+    )
 
+    return NO_HP
+
+# Fungsi untuk menerima bukti transfer
+def kirim_bukti_transfer(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    query.answer()
+
+    query.edit_message_text(
+        text="Silakan kirim bukti transfer berupa gambar atau file.",
+    )
+
+    return OTP
+
+# Fungsi untuk input nomor HP
+def input_no_hp(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text(
+        "Kirimkan nomor HP Anda untuk proses verifikasi.",
+    )
+    
+    return OTP
+
+# Fungsi untuk verifikasi OTP
+def verifikasi_otp(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text(
+        "Masukkan kode OTP yang dikirim ke nomor HP Anda.",
+    )
+    
+    return DONE
+
+# Fungsi selesai
+def selesai(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text(
+        "Terima kasih! Proses telah selesai. Silakan cek status pembayaran Anda.",
+    )
+    
+    return ConversationHandler.END
+
+# Fungsi utama untuk menjalankan bot
+def main() -> None:
+    updater = Updater(BOT_TOKEN)
+
+    # Menambahkan handler untuk command dan callback query
+    dp = updater.dispatcher
+
+    # ConversationHandler untuk setiap step
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            PILIH_BULAN: [CallbackQueryHandler(pilih_bulan)],
-            KONFIRMASI: [CallbackQueryHandler(konfirmasi)],
-            PEMBAYARAN: [CallbackQueryHandler(pembayaran)],
-            KIRIM_BUKTI: [CallbackQueryHandler(kirim_bukti)],
-            VERIFIKASI: [MessageHandler(filters.PHOTO, verifikasi)],
+            PILIH_METODE: [CallbackQueryHandler(pilih_metode)],
+            KONFIRMASI_BAYAR: [CallbackQueryHandler(konfirmasi_bayar)],
+            NO_HP: [MessageHandler(Filters.text & ~Filters.command, input_no_hp)],
+            OTP: [MessageHandler(Filters.text & ~Filters.command, verifikasi_otp)],
+            DONE: [MessageHandler(Filters.text & ~Filters.command, selesai)],
         },
-        fallbacks=[CommandHandler('help', help_command)],
+        fallbacks=[CommandHandler('start', start)],
     )
 
-    application.add_handler(conv_handler)
-    application.run_polling()
+    dp.add_handler(conv_handler)
+
+    # Memulai bot
+    updater.start_polling()
+
+    updater.idle()
 
 if __name__ == '__main__':
     main()
