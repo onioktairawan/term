@@ -76,7 +76,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     keyboard = [
         [InlineKeyboardButton("🛒 Beli Disini", callback_data="beli")],
-        [InlineKeyboardButton("📞 Cs", url="@serpagengs"),
+        [InlineKeyboardButton("📞 Cs", url="https://t.me/serpagengs"),
          InlineKeyboardButton("📣 Testi", url="t.me/srpatesti")]
     ]
     await update.message.reply_text(teks, reply_markup=InlineKeyboardMarkup(keyboard))
