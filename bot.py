@@ -1,3 +1,7 @@
+import subprocess
+from dotenv import load_dotenv
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 import logging
 import os
 from dotenv import load_dotenv
