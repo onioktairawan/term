@@ -171,20 +171,12 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return INPUT_VERIFIKASI
     else:
         user_data_store[uid]["verifikasi"] = text
-        await update.message.reply_text("Terimakasih Atas pembeliannya. Tunggu proses aktivasi ya kak.\nJika ada masalah hubungi CS.")
+        await update.message.reply_text("Terimakasih Atas pembeliannya. Proses selesai.")
         return ConversationHandler.END
 
 def main():
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(button_handler))
-    application.add_handler(MessageHandler(filters.PHOTO, handle_media))
-    application.add_handler(CallbackQueryHandler(handle_owner_response, pattern=r"owner_.+"))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-
-    # Conversation handler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
@@ -192,15 +184,16 @@ def main():
             KONFIRMASI: [CallbackQueryHandler(button_handler)],
             METODE_BAYAR: [CallbackQueryHandler(button_handler)],
             KIRIM_BUKTI: [MessageHandler(filters.PHOTO, handle_media)],
-            INPUT_NOHP: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
-            INPUT_OTP: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)],
-            INPUT_VERIFIKASI: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)]
+            INPUT_NOHP: [MessageHandler(filters.TEXT, handle_text)],
+            INPUT_OTP: [MessageHandler(filters.TEXT, handle_text)],
+            INPUT_VERIFIKASI: [MessageHandler(filters.TEXT, handle_text)],
         },
-        fallbacks=[CommandHandler("start", start)],
+        fallbacks=[],
     )
-    application.add_handler(conv_handler)
 
+    application.add_handler(conv_handler)
+    application.add_handler(CallbackQueryHandler(handle_owner_response, pattern=r"^(owner_konfirmasi|owner_tolak)_\d+$"))
     application.run_polling()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
