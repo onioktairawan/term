@@ -48,8 +48,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         teks += f"{p['id']}. {p['nama']} - Rp {p['harga']:,} ✨\n"
     keyboard = [
         [InlineKeyboardButton("🛒 Beli Disini", callback_data="beli")],
-        [InlineKeyboardButton("📞 CS", url="t.me/serpagengs"),
-         InlineKeyboardButton("📣 Testi", url="t.me/srpatesti")]
+        [InlineKeyboardButton("📞 CS", callback_data="cs"),
+         InlineKeyboardButton("📣 Testi", callback_data="testi")]
     ]
     await update.message.reply_text(teks, reply_markup=InlineKeyboardMarkup(keyboard))
     return PILIH_BULAN
@@ -61,19 +61,19 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "beli":
         keyboard = [[InlineKeyboardButton(p["nama"], callback_data=f"beli_{p['id']}")] for p in produk_list]
-        keyboard.append([InlineKeyboardButton("⬅️ Kembali", callback_data="start")])
+        keyboard.append([InlineKeyboardButton("⬅️ Kembali", callback_data="kembali")])
         await query.edit_message_text("Pilih paket premium yang ingin dibeli:", reply_markup=InlineKeyboardMarkup(keyboard))
         return KONFIRMASI
 
     elif data == "cs":
-        await query.edit_message_text("Hubungi CS: @serpagengs", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Kembali", callback_data="start")]]))
+        await query.edit_message_text("Hubungi CS: @serpagengs", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Kembali", callback_data="kembali")]]))
         return PILIH_BULAN
 
     elif data == "testi":
-        await query.edit_message_text("Lihat testimoni: https://t.me/srpatesti", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Kembali", callback_data="start")]]))
+        await query.edit_message_text("Lihat testimoni: https://t.me/srpatesti", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Kembali", callback_data="kembali")]]))
         return PILIH_BULAN
 
-    elif data == "start":
+    elif data == "kembali":
         return await start(update, context)
 
     elif data.startswith("beli_"):
