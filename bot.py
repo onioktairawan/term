@@ -9,9 +9,9 @@ CallbackQueryHandler, filters, ContextTypes, ConversationHandler
 
 # Load .env
 
-load\_dotenv()
-TOKEN = os.getenv("BOT\_TOKEN")
-OWNER\_ID = int(os.getenv("OWNER\_ID"))
+load_dotenv()
+TOKEN = os.getenv("BOT_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID"))
 
 # Setup logging
 
