@@ -12,6 +12,45 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = int(os.getenv("OWNER_ID"))
 
+# /owner command
+async def owner_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID:
+        await update.message.reply_text("Kamu tidak punya akses ke perintah ini.")
+        return
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("🔁 Restart Bot", callback_data="restart_bot"),
+            InlineKeyboardButton("⬇️ Git Pull", callback_data="git_pull")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("🛠 Menu Owner:", reply_markup=reply_markup)
+
+# Handler untuk tombol inline
+async def owner_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if query.from_user.id != OWNER_ID:
+        await query.edit_message_text("❌ Kamu tidak punya izin.")
+        return
+
+    if query.data == "restart_bot":
+        await query.edit_message_text("🔁 Bot akan direstart...")
+        os.execl(sys.executable, sys.executable, *sys.argv)
+
+    elif query.data == "git_pull":
+        try:
+            result = subprocess.check_output(["git", "pull"], stderr=subprocess.STDOUT).decode()
+            await query.edit_message_text(f"✅ Git Pull Sukses:\n```\n{result}\n```", parse_mode="Markdown")
+        except subprocess.CalledProcessError as e:
+            await query.edit_message_text(f"❌ Git Pull Gagal:\n```\n{e.output.decode()}\n```", parse_mode="Markdown")
+
+# Tambahkan handler-nya ke aplikasi
+application.add_handler(CommandHandler("owner", owner_panel))
+application.add_handler(CallbackQueryHandler(owner_callback))
+
 # Setup logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
