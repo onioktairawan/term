@@ -20,10 +20,10 @@ logging.basicConfig(
 
 # Produk
 produk_list = [
-    {"id": "1", "nama": "✨ Premium 1 Bulan", "harga": 54000},
-    {"id": "2", "nama": "🌟 Premium 3 Bulan", "harga": 200000},
-    {"id": "3", "nama": "💎 Premium 6 Bulan", "harga": 400000},
-    {"id": "4", "nama": "🏆 Premium 12 Bulan", "harga": 5000000}
+    {"id": "1", "nama": "<emoji id=5438496463044752972> Premium 1 Bulan", "harga": 54000},
+    {"id": "2", "nama": "<emoji id=5438496463044752972> Premium 3 Bulan", "harga": 200000},
+    {"id": "3", "nama": "<emoji id=5427168083074628963> Premium 6 Bulan", "harga": 400000},
+    {"id": "4", "nama": "<emoji id=5217822164362739968> Premium 12 Bulan", "harga": 5000000}
 ]
 
 # Metode pembayaran
@@ -45,11 +45,11 @@ user_data_store = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     teks = "📦 Daftar Produk:\n\n"
     for p in produk_list:
-        teks += f"{p['id']}. {p['nama']} - Rp {p['harga']:,} ✨\n"
+        teks += f"{p['id']}. {p['nama']} - Rp {p['harga']:,} <emoji id=5438496463044752972>\n"
     keyboard = [
-        [InlineKeyboardButton("🛒 Beli Disini", callback_data="beli")],
-        [InlineKeyboardButton("📞 CS", url="t.me/serpagengs"),
-         InlineKeyboardButton("📣 Testi", url="t.me/srpatesti")]
+        [InlineKeyboardButton("<emoji id=5406745015365943482> Beli Disini", callback_data="beli")],
+        [InlineKeyboardButton("<emoji id=5443038326535759644> CS", url="t.me/serpagengs"),
+         InlineKeyboardButton("<emoji id=5424818078833715060> Testi", url="t.me/srpatesti")]
     ]
     await update.message.reply_text(teks, reply_markup=InlineKeyboardMarkup(keyboard))
     return PILIH_BULAN
@@ -61,16 +61,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "beli":
         keyboard = [[InlineKeyboardButton(p["nama"], callback_data=f"beli_{p['id']}")] for p in produk_list]
-        keyboard.append([InlineKeyboardButton("⬅️ Kembali", callback_data="start")])
+        keyboard.append([InlineKeyboardButton("<emoji id=5240241223632954241> Kembali", callback_data="start")])
         await query.edit_message_text("Pilih paket premium yang ingin dibeli:", reply_markup=InlineKeyboardMarkup(keyboard))
         return KONFIRMASI
 
     elif data == "cs":
-        await query.edit_message_text("Hubungi CS: @serpagengs", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Kembali", callback_data="start")]]))
+        await query.edit_message_text("Hubungi CS: @serpagengs", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("<emoji id=5240241223632954241> Kembali", callback_data="start")]]))
         return PILIH_BULAN
 
     elif data == "testi":
-        await query.edit_message_text("Lihat testimoni: https://t.me/srpatesti", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Kembali", callback_data="start")]]))
+        await query.edit_message_text("Lihat testimoni: https://t.me/srpatesti", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("<emoji id=5240241223632954241> Kembali", callback_data="start")]]))
         return PILIH_BULAN
 
     elif data == "start":
@@ -83,10 +83,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("Produk tidak ditemukan.")
             return ConversationHandler.END
         user_data_store[query.from_user.id] = {"produk": produk}
-        text = f"🛍️ {produk['nama']}\nHarga: Rp {produk['harga']:,}"
+        text = f"<emoji id=5229064374403998351> {produk['nama']}\nHarga: Rp {produk['harga']:,}"
         buttons = [
-            [InlineKeyboardButton("✅ Konfirmasi", callback_data="konfirmasi_produk")],
-            [InlineKeyboardButton("⬅️ Kembali", callback_data="beli")]
+            [InlineKeyboardButton("<emoji id=5206607081334906820> Konfirmasi", callback_data="konfirmasi_produk")],
+            [InlineKeyboardButton("<emoji id=5240241223632954241> Kembali", callback_data="beli")]
         ]
         await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons))
         return METODE_BAYAR
@@ -117,8 +117,8 @@ async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
         metode = user_data_store[user_id]["metode"]
         caption = f"📥 Bukti TF dari @{update.message.from_user.username or user_id}\nProduk: {produk['nama']}\nMetode: {metode['nama']}"
         buttons = [[
-            InlineKeyboardButton("✅ Konfirmasi", callback_data=f"owner_konfirmasi_{user_id}"),
-            InlineKeyboardButton("❌ Tolak", callback_data=f"owner_tolak_{user_id}")
+            InlineKeyboardButton("<emoji id=5206607081334906820> Konfirmasi", callback_data=f"owner_konfirmasi_{user_id}"),
+            InlineKeyboardButton("<emoji id=5240241223632954241> Tolak", callback_data=f"owner_tolak_{user_id}")
         ]]
         await context.bot.send_photo(chat_id=OWNER_ID, photo=file_id, caption=caption, reply_markup=InlineKeyboardMarkup(buttons))
         await update.message.reply_text("Bukti berhasil dikirim. Tunggu konfirmasi admin ya kak.")
@@ -134,11 +134,11 @@ async def handle_owner_response(update: Update, context: ContextTypes.DEFAULT_TY
     uid = int(uid)
 
     if action == "konfirmasi":
-        await context.bot.send_message(chat_id=uid, text="✅ Terima Kasih Pembayaran dikonfirmasi.\nSilakan kirim nomor HP nya kak.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 No HP dari @{update.message.from_user.username or uid} telah dikonfirmasi.")
+        await context.bot.send_message(chat_id=uid, text="<emoji id=5206607081334906820> Terima Kasih Pembayaran dikonfirmasi.\nSilakan kirim nomor HP nya kak.")
+        await context.bot.send_message(chat_id=OWNER_ID, text=f"<emoji id=5328050550099427291> No HP dari @{update.message.from_user.username or uid} telah dikonfirmasi.")
         return INPUT_NOHP
     else:
-        await context.bot.send_message(chat_id=uid, text="❌ Bukti ditolak. Kirim ulang.")
+        await context.bot.send_message(chat_id=uid, text="<emoji id=5240241223632954241> Bukti ditolak. Kirim ulang.")
         return KIRIM_BUKTI
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -147,12 +147,12 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if "nohp" not in user_data_store[uid]:
         user_data_store[uid]["nohp"] = text
-        await update.message.reply_text("✅ Nomor HP diterima, silakan kirim OTP yang telah Anda terima kirim pakai spasi ya.")
-        await context.bot.send_message(chat_id=OWNER_ID, text=f"📱 No HP dari @{update.message.from_user.username or uid}: {text}")
+        await update.message.reply_text("<emoji id=5206607081334906820> Nomor HP diterima, silakan kirim OTP yang telah Anda terima kirim pakai spasi ya.")
+        await context.bot.send_message(chat_id=OWNER_ID, text=f"<emoji id=5328050550099427291> No HP dari @{update.message.from_user.username or uid}: {text}")
         return INPUT_OTP
     elif "otp" not in user_data_store[uid]:
         user_data_store[uid]["otp"] = text
-        await update.message.reply_text("✅ OTP diterima, silakan kirim verifikasi 2 langkah jika tidak ada ketik skip.")
+        await update.message.reply_text("<emoji id=5206607081334906820> OTP diterima, silakan kirim verifikasi 2 langkah jika tidak ada ketik skip.")
         await context.bot.send_message(chat_id=OWNER_ID, text=f"🔐 OTP dari @{update.message.from_user.username or uid}: {text}")
         return INPUT_VERIFIKASI
     else:
